@@ -4,7 +4,7 @@
 Este monorepo contiene la plataforma completa de trading demo con dos proyectos principales:
 
 - **`racional-api`** - Backend API en NestJS
-- **`racional-front`** - Frontend en React/Next.js
+- **`racional-app`** - Frontend en Next.js
 
 ## 🏗 Estructura del Proyecto
 ```
@@ -13,7 +13,7 @@ racional-test/
 │   ├── src/               # Código fuente de la API
 │   ├── test/              # Tests de la API
 │   └── package.json       # Dependencias del backend
-├── racional-front/        # Frontend (React/Next.js)
+├── racional-app/        # Frontend (Next.js)
 │   ├── src/               # Código fuente del frontend
 │   └── README.md          # Documentación del frontend
 └── README.md              # Este archivo
@@ -50,15 +50,3 @@ npm install
 npm run dev
 ```
 
-## 📊 Funcionalidades
-- Gestión de usuarios y portafolios
-- Operaciones de compra/venta de acciones
-- Gestión de carteras de efectivo
-- Seguimiento de rendimiento
-- Historial de transacciones
-
-## 🔗 Integración
-El frontend se comunica con el backend a través de la API REST, proporcionando una experiencia completa de trading demo.
-
-## 📝 Licencia
-Este proyecto es para fines educativos y de demostración.
