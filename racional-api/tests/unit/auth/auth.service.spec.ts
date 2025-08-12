@@ -3,9 +3,10 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { User } from '../users/entities/user.entity';
-import { Wallet } from '../wallets/entities/wallet.entity';
+import { AuthService } from '../../../src/auth/auth.service';
+import { User } from '../../../src/users/entities/user.entity';
+import { Wallet } from '../../../src/wallets/entities/wallet.entity';
+import { Portfolio } from '../../../src/portfolios/entities/portfolio.entity';
 
 // Mock bcrypt module
 jest.mock('bcrypt', () => ({
@@ -61,6 +62,14 @@ describe('AuthService', () => {
           useValue: {
             create: jest.fn(),
             save: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(Portfolio),
+          useValue: {
+            create: jest.fn(),
+            save: jest.fn(),
+            findOneBy: jest.fn(),
           },
         },
         {

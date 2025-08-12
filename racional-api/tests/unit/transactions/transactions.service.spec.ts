@@ -1,12 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { TransactionsService } from './transactions.service';
-import { Transaction, TransactionType } from './entities/transaction.entity';
-import { Wallet } from '../wallets/entities/wallet.entity';
-import { User } from '../users/entities/user.entity';
+import { TransactionsService } from '../../../src/transactions/transactions.service';
+import {
+  Transaction,
+  TransactionType,
+} from '../../../src/transactions/entities/transaction.entity';
+import { Wallet } from '../../../src/wallets/entities/wallet.entity';
+import { User } from '../../../src/users/entities/user.entity';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { CreateTransactionDto } from './schemas/transaction.schema';
+import { CreateTransactionDto } from '../../../src/transactions/schemas/transaction.schema';
 
 describe('TransactionsService', () => {
   let service: TransactionsService;

@@ -1,14 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UsersService } from './users.service';
-import { User } from './entities/user.entity';
-import { Wallet } from '../wallets/entities/wallet.entity';
-import { Portfolio } from '../portfolios/entities/portfolio.entity';
+import { UsersService } from '../../../src/users/users.service';
+import { User } from '../../../src/users/entities/user.entity';
+import { Wallet } from '../../../src/wallets/entities/wallet.entity';
+import { Portfolio } from '../../../src/portfolios/entities/portfolio.entity';
 import {
   Transaction,
   TransactionType,
-} from '../transactions/entities/transaction.entity';
+} from '../../../src/transactions/entities/transaction.entity';
 import { NotFoundException } from '@nestjs/common';
 import { UpdateUserDto } from './schemas/user.schema';
 

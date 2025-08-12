@@ -1,11 +1,32 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
 import { User } from '../users/entities/user.entity';
 import { Wallet } from '../wallets/entities/wallet.entity';
-import { LoginDto, RegisterDto, LoginResponseDto } from './schemas/auth.schema';
+import { Portfolio } from '../portfolios/entities/portfolio.entity';
+import * as bcrypt from 'bcrypt';
+
+export interface LoginDto {
+  email: string;
+  password: string;
+}
+
+export interface RegisterDto {
+  name: string;
+  email: string;
+  phone?: string;
+  password: string;
+}
+
+export interface LoginResponseDto {
+  access_token: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
 
 @Injectable()
 export class AuthService {
@@ -14,16 +35,15 @@ export class AuthService {
     private userRepository: Repository<User>,
     @InjectRepository(Wallet)
     private walletRepository: Repository<Wallet>,
+    @InjectRepository(Portfolio)
+    private portfolioRepository: Repository<Portfolio>,
     private jwtService: JwtService,
   ) {}
 
-  async validateUser(
-    email: string,
-    password: string,
-  ): Promise<Omit<User, 'password'> | null> {
+  async validateUser(email: string, password: string): Promise<any> {
     const user = await this.userRepository.findOneBy({ email });
     if (user && (await bcrypt.compare(password, user.password))) {
-      const { password: _password, ...result } = user;
+      const { password, ...result } = user;
       return result;
     }
     return null;
@@ -36,10 +56,8 @@ export class AuthService {
     }
 
     const payload = { email: user.email, id: user.id };
-    const access_token = this.jwtService.sign(payload);
-
     return {
-      access_token,
+      access_token: this.jwtService.sign(payload),
       user: {
         id: user.id,
         name: user.name,
@@ -53,7 +71,6 @@ export class AuthService {
     const existingUser = await this.userRepository.findOneBy({
       email: registerDto.email,
     });
-
     if (existingUser) {
       throw new UnauthorizedException('User already exists');
     }
@@ -66,17 +83,23 @@ export class AuthService {
       ...registerDto,
       password: hashedPassword,
     });
-
     const savedUser = await this.userRepository.save(user);
 
-    // Create wallet for user
+    // Create wallet for the user
     const wallet = this.walletRepository.create({
       user_id: savedUser.id,
       balance: 0,
       currency: 'USD',
     });
-
     await this.walletRepository.save(wallet);
+
+    // Create default portfolio for the user
+    const portfolio = this.portfolioRepository.create({
+      user_id: savedUser.id,
+      name: 'Main Portfolio',
+      description: 'Default trading portfolio',
+    });
+    await this.portfolioRepository.save(portfolio);
 
     // Return login response
     return this.login({
