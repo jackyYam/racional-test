@@ -48,26 +48,6 @@ export class UsersService {
     return this.userRepository.save(user);
   }
 
-  async calculateActualWalletBalance(walletId: string): Promise<number> {
-    // Use raw query to find transactions with non-null execution_date
-    const transactions = await this.transactionRepository
-      .createQueryBuilder('transaction')
-      .where('transaction.wallet_id = :walletId', { walletId })
-      .andWhere('transaction.execution_date IS NOT NULL')
-      .getMany();
-
-    let balance = 0;
-    for (const transaction of transactions) {
-      if (transaction.type === TransactionType.DEPOSIT) {
-        balance += transaction.amount;
-      } else {
-        balance -= transaction.amount;
-      }
-    }
-
-    return balance;
-  }
-
   async getUserProfile(userId: string): Promise<UserProfileResponseDto> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
@@ -85,10 +65,6 @@ export class UsersService {
     }
 
     // Calculate actual balance based on executed transactions
-    const actualBalance = await this.calculateActualWalletBalance(
-      user.wallet.id,
-    );
-
     return {
       user: {
         id: user.id,
@@ -100,7 +76,7 @@ export class UsersService {
       },
       wallet: {
         id: user.wallet.id,
-        balance: actualBalance,
+        balance: user.wallet.balance,
         currency: user.wallet.currency,
       },
       portfolios:

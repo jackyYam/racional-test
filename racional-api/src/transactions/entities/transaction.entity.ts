@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Timestamp,
 } from 'typeorm';
 import { Wallet } from '../../wallets/entities/wallet.entity';
 
@@ -36,7 +37,7 @@ export class Transaction {
   })
   amount: number;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   execution_date: Date;
 
   @Column({ type: 'varchar', length: 100, nullable: true, unique: true })

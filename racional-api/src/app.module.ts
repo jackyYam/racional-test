@@ -15,6 +15,7 @@ import { PortfoliosModule } from './portfolios/portfolios.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: '.env.development',
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],

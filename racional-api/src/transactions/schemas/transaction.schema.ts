@@ -4,12 +4,12 @@ import { TransactionType } from '../entities/transaction.entity';
 export const CreateTransactionSchema = z.object({
   type: z.enum(['DEPOSIT', 'WITHDRAWAL']),
   amount: z.number().positive('Amount must be positive'),
-  execution_date: z.date().optional(),
+  execution_date: z.string().optional(),
   external_ref_id: z.string().optional(),
 });
 
 export const MarkTransactionAsExecutedSchema = z.object({
-  execution_date: z.date(),
+  execution_date: z.string(),
 });
 
 export const TransactionResponseSchema = z.object({

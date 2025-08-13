@@ -68,11 +68,7 @@ export class TradesService {
       throw new BadRequestException('Quantity must be positive');
     }
 
-    if (createTradeOrderDto.price <= 0) {
-      throw new BadRequestException('Price must be positive');
-    }
-
-    const totalCost = createTradeOrderDto.quantity * createTradeOrderDto.price;
+    const totalCost = createTradeOrderDto.quantity * stock.current_price;
 
     // Check if user has enough funds for buy orders
     if (createTradeOrderDto.type === TradeOrderType.BUY) {
@@ -96,79 +92,51 @@ export class TradesService {
       }
     }
 
-    // Create the trade order
-    const tradeOrder = this.tradeOrderRepository.create({
-      wallet_id: user.wallet.id,
-      portfolio_id: portfolio.id,
-      stock_id: stock.id,
-      type: createTradeOrderDto.type as TradeOrderType,
-      quantity: createTradeOrderDto.quantity,
-      price: createTradeOrderDto.price,
-      execution_date: createTradeOrderDto.execution_date,
-      external_ref_id: createTradeOrderDto.external_ref_id,
-    });
-
-    return this.tradeOrderRepository.save(tradeOrder);
-  }
-
-  async executeTradeOrder(
-    tradeOrderId: string,
-    userId: string,
-    executionDate: string,
-  ): Promise<TradeOrder> {
-    const tradeOrder = await this.tradeOrderRepository.findOne({
-      where: { id: tradeOrderId },
-      relations: ['wallet', 'portfolio', 'stock'],
-    });
-
-    if (!tradeOrder) {
-      throw new NotFoundException('Trade order not found');
-    }
-
-    if (tradeOrder.wallet.user_id !== userId) {
-      throw new NotFoundException('Trade order does not belong to user');
-    }
-
-    if (tradeOrder.execution_date) {
-      throw new BadRequestException('Trade order already executed');
-    }
-
-    const executionDateObj = new Date(executionDate);
-    const totalValue = tradeOrder.quantity * tradeOrder.price;
-
+    // Execute the trade immediately within a transaction
     return this.dataSource.transaction(async (manager) => {
-      // Update trade order execution date
-      tradeOrder.execution_date = executionDateObj;
-      await manager.save(TradeOrder, tradeOrder);
+      // Create the trade order with immediate execution
+      const tradeOrder = manager.create(TradeOrder, {
+        wallet_id: user.wallet.id,
+        portfolio_id: portfolio.id,
+        stock_id: stock.id,
+        type: createTradeOrderDto.type as TradeOrderType,
+        quantity: createTradeOrderDto.quantity,
+        price: totalCost,
+        execution_date: new Date(), // Set execution date to now
+        external_ref_id: createTradeOrderDto.external_ref_id,
+      });
 
-      if (tradeOrder.type === TradeOrderType.BUY) {
+      // Save the trade order first
+      const savedTradeOrder = await manager.save(TradeOrder, tradeOrder);
+
+      if (createTradeOrderDto.type === TradeOrderType.BUY) {
         // Deduct money from wallet
-        tradeOrder.wallet.balance -= totalValue;
-        await manager.save(Wallet, tradeOrder.wallet);
+        user.wallet.balance -= totalCost;
+        await manager.save(Wallet, user.wallet);
 
         // Add shares to portfolio
         await this.addSharesToPortfolio(
           manager,
-          tradeOrder.portfolio_id,
-          tradeOrder.stock_id,
-          tradeOrder.quantity,
-          totalValue,
+          portfolio.id,
+          createTradeOrderDto.stock_id,
+          createTradeOrderDto.quantity,
+          totalCost,
         );
       } else {
         // Add money to wallet
-        tradeOrder.wallet.balance += totalValue;
-        await manager.save(Wallet, tradeOrder.wallet);
+        user.wallet.balance += totalCost;
+        await manager.save(Wallet, user.wallet);
 
         // Remove shares from portfolio
         await this.removeSharesFromPortfolio(
           manager,
-          tradeOrder.portfolio_id,
-          tradeOrder.stock_id,
-          tradeOrder.quantity,
+          portfolio.id,
+          createTradeOrderDto.stock_id,
+          createTradeOrderDto.quantity,
         );
       }
 
-      return tradeOrder;
+      return savedTradeOrder;
     });
   }
 
@@ -304,7 +272,7 @@ export class TradesService {
         portfolio_name: order.portfolio.name,
         execution_date: order.execution_date,
         created_at: order.created_at,
-        status: order.execution_date ? 'executed' : 'pending',
+        status: 'executed', // All orders are now executed immediately
       })),
       total,
       page,

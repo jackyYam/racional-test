@@ -52,7 +52,7 @@ export class TradeOrder {
   })
   price: number;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   execution_date: Date;
 
   @Column({ type: 'varchar', length: 100, nullable: true, unique: true })

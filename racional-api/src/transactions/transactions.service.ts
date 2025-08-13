@@ -58,7 +58,9 @@ export class TransactionsService {
         wallet_id: wallet.id,
         type: createTransactionDto.type as TransactionType,
         amount: createTransactionDto.amount,
-        execution_date: createTransactionDto.execution_date,
+        execution_date: createTransactionDto.execution_date
+          ? new Date(createTransactionDto.execution_date)
+          : undefined,
         external_ref_id: createTransactionDto.external_ref_id,
       };
 
@@ -174,6 +176,8 @@ export class TransactionsService {
       where: { user_id: userId },
     });
 
+    console.log('wallet', wallet);
+
     if (!wallet) {
       throw new NotFoundException('Wallet not found');
     }
@@ -192,7 +196,9 @@ export class TransactionsService {
       wallet_id: transaction.wallet_id,
       type: transaction.type,
       amount: transaction.amount,
-      execution_date: transaction.execution_date?.toISOString() || null,
+      execution_date: transaction.execution_date
+        ? new Date(transaction.execution_date).toISOString()
+        : null,
       external_ref_id: transaction.external_ref_id,
       created_at: transaction.created_at.toISOString(),
     }));

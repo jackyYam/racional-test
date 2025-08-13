@@ -6,8 +6,6 @@ export const CreateTradeOrderSchema = z.object({
   stock_id: z.uuid('Invalid stock ID'),
   type: z.enum(['BUY', 'SELL']),
   quantity: z.number().positive('Quantity must be positive'),
-  price: z.number().positive('Price must be positive'),
-  execution_date: z.string().optional(),
   external_ref_id: z.string().optional(),
 });
 
@@ -34,4 +32,6 @@ export const TradeOrderListResponseSchema = z.object({
 // Type inference
 export type CreateTradeOrderDto = z.infer<typeof CreateTradeOrderSchema>;
 export type TradeOrderResponseDto = z.infer<typeof TradeOrderResponseSchema>;
-export type TradeOrderListResponseDto = z.infer<typeof TradeOrderListResponseSchema>;
+export type TradeOrderListResponseDto = z.infer<
+  typeof TradeOrderListResponseSchema
+>;
