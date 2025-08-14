@@ -5,9 +5,19 @@ import { PortfoliosController } from './portfolios.controller';
 import { Portfolio } from './entities/portfolio.entity';
 import { PortfolioStock } from './entities/portfolio-stock.entity';
 import { User } from '../users/entities/user.entity';
+import { TradeOrder } from '../trades/entities/trade-order.entity';
+import { Stock } from '../stocks/entities/stock.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Portfolio, PortfolioStock, User])],
+  imports: [
+    TypeOrmModule.forFeature([
+      Portfolio,
+      PortfolioStock,
+      User,
+      TradeOrder,
+      Stock,
+    ]),
+  ],
   controllers: [PortfoliosController],
   providers: [PortfoliosService],
   exports: [PortfoliosService],

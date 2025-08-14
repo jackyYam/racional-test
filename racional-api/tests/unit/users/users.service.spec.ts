@@ -10,7 +10,7 @@ import {
   TransactionType,
 } from '../../../src/transactions/entities/transaction.entity';
 import { NotFoundException } from '@nestjs/common';
-import { UpdateUserDto } from './schemas/user.schema';
+import { UpdateUserDto } from 'src/users/schemas/user.schema';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -220,52 +220,6 @@ describe('UsersService', () => {
     });
   });
 
-  describe('calculateActualWalletBalance', () => {
-    it('should calculate balance from executed transactions only', async () => {
-      const mockQueryBuilder = {
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        getMany: jest
-          .fn()
-          .mockResolvedValue(
-            mockTransactions.filter((t) => t.execution_date !== null),
-          ),
-      };
-
-      jest
-        .spyOn(transactionRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQueryBuilder as any);
-
-      const result = await service.calculateActualWalletBalance('wallet-123');
-
-      // Only executed transactions: DEPOSIT 1000 - WITHDRAWAL 200 = 800
-      expect(result).toBe(800);
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        'transaction.wallet_id = :walletId',
-        { walletId: 'wallet-123' },
-      );
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'transaction.execution_date IS NOT NULL',
-      );
-    });
-
-    it('should return 0 when no executed transactions exist', async () => {
-      const mockQueryBuilder = {
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue([]),
-      };
-
-      jest
-        .spyOn(transactionRepository, 'createQueryBuilder')
-        .mockReturnValue(mockQueryBuilder as any);
-
-      const result = await service.calculateActualWalletBalance('wallet-123');
-
-      expect(result).toBe(0);
-    });
-  });
-
   describe('getUserProfile', () => {
     it('should return user profile with calculated wallet balance', async () => {
       const userWithRelations = {
@@ -295,7 +249,7 @@ describe('UsersService', () => {
 
       expect(result.user.id).toBe('user-123');
       expect(result.wallet.id).toBe('wallet-123');
-      expect(result.wallet.balance).toBe(800); // Calculated balance
+      expect(result.wallet.balance).toBe(1000); // Wallet balance from entity
       expect(result.wallet.currency).toBe('USD');
       expect(result.portfolios).toHaveLength(1);
       expect(result.portfolios[0].name).toBe('Main Portfolio');

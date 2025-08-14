@@ -8,6 +8,11 @@ import { Repository } from 'typeorm';
 import { Portfolio } from './entities/portfolio.entity';
 import { PortfolioStock } from './entities/portfolio-stock.entity';
 import { User } from '../users/entities/user.entity';
+import {
+  TradeOrder,
+  TradeOrderType,
+} from '../trades/entities/trade-order.entity';
+import { Stock } from '../stocks/entities/stock.entity';
 import { UpdatePortfolioDto } from './schemas/portfolio.schema';
 
 @Injectable()
@@ -19,6 +24,10 @@ export class PortfoliosService {
     private portfolioStockRepository: Repository<PortfolioStock>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(TradeOrder)
+    private tradeOrderRepository: Repository<TradeOrder>,
+    @InjectRepository(Stock)
+    private stockRepository: Repository<Stock>,
   ) {}
 
   async createPortfolio(
@@ -32,7 +41,7 @@ export class PortfoliosService {
     }
 
     const portfolio = this.portfolioRepository.create({
-      user_id: userId,
+      user_id: user.id,
       name,
       description: description || '',
     });
@@ -80,41 +89,37 @@ export class PortfoliosService {
     return this.portfolioRepository.save(portfolio);
   }
 
-  async deletePortfolio(portfolioId: string, userId: string): Promise<void> {
-    const portfolio = await this.getPortfolioById(portfolioId, userId);
-
-    // Check if portfolio has any holdings
-    const holdings = await this.portfolioStockRepository.find({
-      where: { portfolio_id: portfolioId },
-    });
-
-    if (holdings.length > 0) {
-      throw new BadRequestException(
-        'Cannot delete portfolio with existing holdings. Please sell all stocks first.',
-      );
-    }
-
-    await this.portfolioRepository.remove(portfolio);
-  }
-
   async getPortfolioSummary(portfolioId: string, userId: string): Promise<any> {
     const portfolio = await this.getPortfolioById(portfolioId, userId);
 
-    const holdings = await this.portfolioStockRepository
-      .createQueryBuilder('ps')
-      .leftJoinAndSelect('ps.stock', 'stock')
-      .where('ps.portfolio_id = :portfolioId', { portfolioId })
+    // Get all portfolio stocks with their stock information
+    const portfolioStocks = await this.portfolioStockRepository
+      .createQueryBuilder('portfolioStock')
+      .leftJoinAndSelect('portfolioStock.stock', 'stock')
+      .where('portfolioStock.portfolio_id = :portfolioId', { portfolioId })
+      .andWhere('portfolioStock.shares > 0')
       .getMany();
 
-    const totalInvestment = holdings.reduce(
-      (sum, holding) => sum + holding.investment_amount,
+    // Calculate totals using PortfolioStock entity data
+    const totalInvestment = portfolioStocks.reduce(
+      (sum, portfolioStock) => sum + Number(portfolioStock.investment_amount),
       0,
     );
-    const totalCurrentValue = holdings.reduce(
-      (sum, holding) => sum + holding.shares * holding.stock.current_price,
+    const totalSellAmount = portfolioStocks.reduce(
+      (sum, portfolioStock) => sum + Number(portfolioStock.sell_amount),
       0,
     );
-    const totalProfitLoss = totalCurrentValue - totalInvestment;
+
+    const totalCurrentValue = portfolioStocks.reduce(
+      (sum, portfolioStock) =>
+        sum +
+        Number(portfolioStock.shares) *
+          Number(portfolioStock.stock.current_price),
+      0,
+    );
+
+    const totalProfitLoss =
+      totalCurrentValue + totalSellAmount - totalInvestment;
 
     return {
       portfolio: {
@@ -125,31 +130,35 @@ export class PortfoliosService {
         updated_at: portfolio.updated_at,
       },
       summary: {
-        total_holdings: holdings.length,
+        total_sell_amount: totalSellAmount,
         total_investment: totalInvestment,
         total_current_value: totalCurrentValue,
         total_profit_loss: totalProfitLoss,
         profit_loss_percentage:
           totalInvestment > 0 ? (totalProfitLoss / totalInvestment) * 100 : 0,
       },
-      holdings: holdings.map((holding) => ({
-        stock_id: holding.stock_id,
-        symbol: holding.stock.symbol,
-        name: holding.stock.name,
-        shares: holding.shares,
-        investment_amount: holding.investment_amount,
-        current_value: holding.shares * holding.stock.current_price,
-        current_price: holding.stock.current_price,
-        avg_price: holding.investment_amount / holding.shares,
-        profit_loss:
-          holding.shares * holding.stock.current_price -
-          holding.investment_amount,
-        profit_loss_percentage:
-          ((holding.shares * holding.stock.current_price -
-            holding.investment_amount) /
-            holding.investment_amount) *
-          100,
-      })),
+      holdings: portfolioStocks.map((portfolioStock) => {
+        const shares = Number(portfolioStock.shares);
+        const investmentAmount = Number(portfolioStock.investment_amount);
+        const sellAmount = Number(portfolioStock.sell_amount);
+        const currentPrice = Number(portfolioStock.stock.current_price);
+        const currentValue = shares * currentPrice;
+        const profitLoss = currentValue + sellAmount - investmentAmount;
+
+        return {
+          stock_id: portfolioStock.stock.id,
+          symbol: portfolioStock.stock.symbol,
+          name: portfolioStock.stock.name,
+          shares: shares,
+          investment_amount: investmentAmount,
+          current_value: currentValue,
+          current_price: currentPrice,
+          sell_amount: sellAmount,
+          profit_loss: profitLoss,
+          profit_loss_percentage:
+            investmentAmount > 0 ? (profitLoss / investmentAmount) * 100 : 0,
+        };
+      }),
     };
   }
 }

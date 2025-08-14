@@ -176,8 +176,6 @@ export class TransactionsService {
       where: { user_id: userId },
     });
 
-    console.log('wallet', wallet);
-
     if (!wallet) {
       throw new NotFoundException('Wallet not found');
     }

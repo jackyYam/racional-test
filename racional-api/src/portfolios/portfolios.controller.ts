@@ -81,28 +81,6 @@ export class PortfoliosController {
     return this.portfoliosService.getUserPortfolios(req.user.id);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get portfolio by ID' })
-  @ApiResponse({
-    status: 200,
-    description: 'Portfolio retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string' },
-        user_id: { type: 'string' },
-        name: { type: 'string' },
-        description: { type: 'string' },
-        created_at: { type: 'string' },
-        updated_at: { type: 'string' },
-      },
-    },
-  })
-  @ApiResponse({ status: 404, description: 'Portfolio not found' })
-  async getPortfolioById(@Param('id') id: string, @Req() req: any) {
-    return this.portfoliosService.getPortfolioById(id, req.user.id);
-  }
-
   @Put(':id')
   @ApiOperation({ summary: 'Update portfolio information' })
   @ApiResponse({
@@ -132,7 +110,7 @@ export class PortfoliosController {
     );
   }
 
-  @Get(':id/summary')
+  @Get(':id')
   @ApiOperation({
     summary: 'Get portfolio summary with holdings and performance',
   })

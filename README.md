@@ -37,24 +37,6 @@ racional-test/
 - **Estilos**: Tailwind CSS
 - **Estado**: Zustand/Redux Toolkit
 
-## 🛠 Instalación y Desarrollo
-
-### Backend
-
-```bash
-cd racional-api
-npm install
-npm run start:dev
-```
-
-### Frontend
-
-```bash
-cd racional-app
-npm install
-npm run dev
-```
-
 # Uso del AI en desarrollo API
 
 1. En primer paso, pedi al AI que diseñamos juntos el modelo de datos, desde su primer output, le fui dando sugerencias en el camino para complementar y verificar que el diseño sea pertinente al problema, lo mas importante son los siguientes:
@@ -79,3 +61,13 @@ npm run dev
 
    7. **Optimización de Rendimiento en Posiciones**  
       En `PortfolioStock` solo se almacenan los datos esenciales (`quantity` y `investment_amount`), y el valor de mercado se calcula dinámicamente a partir de `Stock.current_price`. Esto reduce la carga de escritura y mantiene la base de datos ligera.
+
+2. Una vez definido los modelos de datos, le voy diciendo paso a paso las entidades para que defina las entidades y los controladores, y que aprovecha de generar documentacion de Open API, estos son trabajos repetitivos que tomaran mucho tiempo a mano. Una vez teniendo eso, le digo los servicios que necesito, donde el hace un draft y le voy puliendo los datelles.
+
+3. Tambien le pido que genere los unit tests
+
+# Uso de AI para front
+
+- Le pase los datos para que haga un analisis sobre que se puede analizar y que KPI puedo sacar para mostrar informacion que aporta a los usuarios
+- En mi flujo de programacion, le pido cosas faciles pero que toma mas tiempo a mano por ejemplo, definir los tipos para el datos, refactorizar a hooks la logica de selecion de fechas y la carga de datos
+- Tambien le pase los kpis que quiero analizar para que me facilite con la implementacion de estos

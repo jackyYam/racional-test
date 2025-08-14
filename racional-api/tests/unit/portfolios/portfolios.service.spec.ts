@@ -5,6 +5,11 @@ import { PortfoliosService } from '../../../src/portfolios/portfolios.service';
 import { Portfolio } from '../../../src/portfolios/entities/portfolio.entity';
 import { PortfolioStock } from '../../../src/portfolios/entities/portfolio-stock.entity';
 import { User } from '../../../src/users/entities/user.entity';
+import {
+  TradeOrder,
+  TradeOrderType,
+} from '../../../src/trades/entities/trade-order.entity';
+import { Stock } from '../../../src/stocks/entities/stock.entity';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 
 describe('PortfoliosService', () => {
@@ -12,6 +17,8 @@ describe('PortfoliosService', () => {
   let portfolioRepository: Repository<Portfolio>;
   let portfolioStockRepository: Repository<PortfolioStock>;
   let userRepository: Repository<User>;
+  let tradeOrderRepository: Repository<TradeOrder>;
+  let stockRepository: Repository<Stock>;
 
   const mockUser: Partial<User> = {
     id: 'user-123',
@@ -34,6 +41,7 @@ describe('PortfoliosService', () => {
     stock_id: 'stock-123',
     shares: 10,
     investment_amount: 1500,
+    sell_amount: 0,
     stock: {
       id: 'stock-123',
       symbol: 'AAPL',
@@ -66,6 +74,7 @@ describe('PortfoliosService', () => {
             createQueryBuilder: jest.fn(() => ({
               leftJoinAndSelect: jest.fn().mockReturnThis(),
               where: jest.fn().mockReturnThis(),
+              andWhere: jest.fn().mockReturnThis(),
               getMany: jest.fn(),
             })),
           },
@@ -74,6 +83,23 @@ describe('PortfoliosService', () => {
           provide: getRepositoryToken(User),
           useValue: {
             findOneBy: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(TradeOrder),
+          useValue: {
+            createQueryBuilder: jest.fn(() => ({
+              leftJoinAndSelect: jest.fn().mockReturnThis(),
+              where: jest.fn().mockReturnThis(),
+              getMany: jest.fn(),
+            })),
+          },
+        },
+        {
+          provide: getRepositoryToken(Stock),
+          useValue: {
+            find: jest.fn(),
+            findOne: jest.fn(),
           },
         },
       ],
@@ -87,6 +113,10 @@ describe('PortfoliosService', () => {
       getRepositoryToken(PortfolioStock),
     );
     userRepository = module.get<Repository<User>>(getRepositoryToken(User));
+    tradeOrderRepository = module.get<Repository<TradeOrder>>(
+      getRepositoryToken(TradeOrder),
+    );
+    stockRepository = module.get<Repository<Stock>>(getRepositoryToken(Stock));
   });
 
   it('should be defined', () => {
@@ -307,54 +337,27 @@ describe('PortfoliosService', () => {
     });
   });
 
-  describe('deletePortfolio', () => {
-    it('should delete portfolio successfully when no holdings exist', async () => {
-      jest
-        .spyOn(portfolioRepository, 'findOne')
-        .mockResolvedValue(mockPortfolio as Portfolio);
-      jest.spyOn(portfolioStockRepository, 'find').mockResolvedValue([]);
-      jest
-        .spyOn(portfolioRepository, 'remove')
-        .mockResolvedValue(mockPortfolio as Portfolio);
-
-      await service.deletePortfolio('portfolio-123', 'user-123');
-
-      expect(portfolioRepository.remove).toHaveBeenCalledWith(mockPortfolio);
-    });
-
-    it('should throw BadRequestException when portfolio has holdings', async () => {
-      const mockHoldings = [mockPortfolioStock];
-
-      jest
-        .spyOn(portfolioRepository, 'findOne')
-        .mockResolvedValue(mockPortfolio as Portfolio);
-      jest
-        .spyOn(portfolioStockRepository, 'find')
-        .mockResolvedValue(mockHoldings as PortfolioStock[]);
-
-      await expect(
-        service.deletePortfolio('portfolio-123', 'user-123'),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it('should throw NotFoundException when portfolio not found', async () => {
-      jest.spyOn(portfolioRepository, 'findOne').mockResolvedValue(null);
-
-      await expect(
-        service.deletePortfolio('portfolio-123', 'user-123'),
-      ).rejects.toThrow(NotFoundException);
-    });
-  });
-
   describe('getPortfolioSummary', () => {
+    const mockStock = {
+      id: 'stock-123',
+      symbol: 'AAPL',
+      name: 'Apple Inc.',
+      market: 'NASDAQ',
+      current_price: 150.0,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+
     it('should return portfolio summary with holdings successfully', async () => {
-      const mockHoldings = [
-        mockPortfolioStock,
+      const mockPortfolioStocks = [
         {
-          ...mockPortfolioStock,
-          id: 'holding-456',
-          shares: 5,
-          investment_amount: 750,
+          id: 'portfolio-stock-1',
+          portfolio_id: 'portfolio-123',
+          stock_id: 'stock-123',
+          shares: 15,
+          investment_amount: 1600, // Total investment
+          sell_amount: 0,
+          stock: mockStock,
         },
       ];
 
@@ -365,7 +368,8 @@ describe('PortfoliosService', () => {
       const mockQueryBuilder = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue(mockHoldings),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(mockPortfolioStocks),
       };
       jest
         .spyOn(portfolioStockRepository, 'createQueryBuilder')
@@ -377,16 +381,17 @@ describe('PortfoliosService', () => {
       );
 
       expect(result.portfolio).toEqual({
-        id: 'portfolio-123',
-        name: 'Updated Name', // Service returns updated name
-        description: 'Updated Description', // Service returns updated description
-        created_at: expect.any(Date), // Service returns actual dates
-        updated_at: expect.any(Date), // Service returns actual dates
+        id: mockPortfolio.id,
+        name: mockPortfolio.name,
+        description: mockPortfolio.description,
+        created_at: mockPortfolio.created_at,
+        updated_at: mockPortfolio.updated_at,
       });
-      expect(result.summary.total_holdings).toBe(2);
-      expect(result.summary.total_investment).toBe(2250);
-      expect(result.summary.total_current_value).toBe(2250);
-      expect(result.summary.total_profit_loss).toBe(0);
+      expect(result.summary.total_investment).toBe(1600);
+      expect(result.summary.total_current_value).toBe(2250); // 15 * 150
+      expect(result.summary.total_profit_loss).toBe(650); // 2250 - 1600
+      expect(result.holdings).toHaveLength(1);
+      expect(result.holdings[0].shares).toBe(15);
     });
 
     it('should return portfolio summary with zero values when no holdings', async () => {
@@ -397,6 +402,7 @@ describe('PortfoliosService', () => {
       const mockQueryBuilder = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([]),
       };
       jest
@@ -408,17 +414,24 @@ describe('PortfoliosService', () => {
         'user-123',
       );
 
-      expect(result.summary.total_holdings).toBe(0);
       expect(result.summary.total_investment).toBe(0);
       expect(result.summary.total_current_value).toBe(0);
       expect(result.summary.total_profit_loss).toBe(0);
+      expect(result.holdings).toHaveLength(0);
     });
 
-    it('should calculate profit/loss correctly', async () => {
-      const mockHoldingWithProfit = {
-        ...mockPortfolioStock,
-        stock: { ...mockPortfolioStock.stock, current_price: 200.0 }, // Price increased
-      };
+    it('should handle buy and sell trades correctly', async () => {
+      const mockPortfolioStocks = [
+        {
+          id: 'portfolio-stock-1',
+          portfolio_id: 'portfolio-123',
+          stock_id: 'stock-123',
+          shares: 7, // 10 bought - 3 sold
+          investment_amount: 640, // (10 * 100) - (3 * 120)
+          sell_amount: 360, // 3 * 120
+          stock: mockStock,
+        },
+      ];
 
       jest
         .spyOn(portfolioRepository, 'findOne')
@@ -427,7 +440,8 @@ describe('PortfoliosService', () => {
       const mockQueryBuilder = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue([mockHoldingWithProfit]),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(mockPortfolioStocks),
       };
       jest
         .spyOn(portfolioStockRepository, 'createQueryBuilder')
@@ -438,7 +452,36 @@ describe('PortfoliosService', () => {
         'user-123',
       );
 
-      expect(result.summary.total_profit_loss).toBe(500); // (10 * 200) - 1500
+      expect(result.holdings).toHaveLength(1);
+      expect(result.holdings[0].shares).toBe(7); // 10 - 3
+      expect(result.summary.total_investment).toBe(640); // (10 * 100) - (3 * 120)
+    });
+
+    it('should filter out stocks with zero shares after selling', async () => {
+      // When all shares are sold, the query with andWhere('portfolioStock.shares > 0')
+      // would return empty array since there are no stocks with shares > 0
+      jest
+        .spyOn(portfolioRepository, 'findOne')
+        .mockResolvedValue(mockPortfolio as Portfolio);
+
+      const mockQueryBuilder = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]), // No stocks with shares > 0
+      };
+      jest
+        .spyOn(portfolioStockRepository, 'createQueryBuilder')
+        .mockReturnValue(mockQueryBuilder as any);
+
+      const result = await service.getPortfolioSummary(
+        'portfolio-123',
+        'user-123',
+      );
+
+      expect(result.holdings).toHaveLength(0); // No holdings after selling all shares
+      expect(result.summary.total_investment).toBe(0);
+      expect(result.summary.total_current_value).toBe(0);
     });
 
     it('should throw NotFoundException when portfolio not found', async () => {

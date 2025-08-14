@@ -68,14 +68,12 @@ export class TradesService {
       throw new BadRequestException('Quantity must be positive');
     }
 
-    const totalCost = createTradeOrderDto.quantity * stock.current_price;
+    const totalCost =
+      Number(createTradeOrderDto.quantity) * Number(stock.current_price);
 
     // Check if user has enough funds for buy orders
     if (createTradeOrderDto.type === TradeOrderType.BUY) {
-      const walletBalance =
-        await this.transactionsService.calculateActualWalletBalance(
-          user.wallet.id,
-        );
+      const walletBalance = user.wallet.balance;
       if (walletBalance < totalCost) {
         throw new BadRequestException('Insufficient funds for this trade');
       }
@@ -111,7 +109,7 @@ export class TradesService {
 
       if (createTradeOrderDto.type === TradeOrderType.BUY) {
         // Deduct money from wallet
-        user.wallet.balance -= totalCost;
+        user.wallet.balance = Number(user.wallet.balance) - totalCost;
         await manager.save(Wallet, user.wallet);
 
         // Add shares to portfolio
@@ -124,7 +122,8 @@ export class TradesService {
         );
       } else {
         // Add money to wallet
-        user.wallet.balance += totalCost;
+
+        user.wallet.balance = Number(user.wallet.balance) + totalCost;
         await manager.save(Wallet, user.wallet);
 
         // Remove shares from portfolio
@@ -153,10 +152,11 @@ export class TradesService {
 
     if (portfolioStock) {
       // Update existing holding
-      const newTotalShares = portfolioStock.shares + quantity;
-      const newTotalInvestment = portfolioStock.investment_amount + totalValue;
-      portfolioStock.shares = newTotalShares;
-      portfolioStock.investment_amount = newTotalInvestment;
+      const newTotalShares = Number(portfolioStock.shares) + Number(quantity);
+      const newTotalInvestment =
+        Number(portfolioStock.investment_amount) + Number(totalValue);
+      portfolioStock.shares = Number(newTotalShares);
+      portfolioStock.investment_amount = Number(newTotalInvestment);
       portfolioStock.updated_at = new Date();
     } else {
       // Create new holding
@@ -180,6 +180,7 @@ export class TradesService {
   ): Promise<void> {
     const portfolioStock = await manager.findOne(PortfolioStock, {
       where: { portfolio_id: portfolioId, stock_id: stockId },
+      relations: ['stock'],
     });
 
     if (!portfolioStock) {
@@ -199,6 +200,9 @@ export class TradesService {
     } else {
       // Update the holding
       portfolioStock.shares = newShares;
+      portfolioStock.sell_amount =
+        Number(portfolioStock.sell_amount) +
+        Number(quantity * portfolioStock.stock.current_price);
       portfolioStock.updated_at = new Date();
       await manager.save(PortfolioStock, portfolioStock);
     }

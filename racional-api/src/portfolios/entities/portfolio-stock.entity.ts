@@ -36,6 +36,15 @@ export class PortfolioStock {
   })
   investment_amount: number;
 
+  @Column({
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    nullable: true,
+    default: 0,
+  })
+  sell_amount: number;
+
   @UpdateDateColumn()
   updated_at: Date;
 
