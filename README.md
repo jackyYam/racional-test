@@ -64,10 +64,13 @@ racional-test/
 
 2. Una vez definido los modelos de datos, le voy diciendo paso a paso las entidades para que defina las entidades y los controladores, y que aprovecha de generar documentacion de Open API, estos son trabajos repetitivos que tomaran mucho tiempo a mano. Una vez teniendo eso, le digo los servicios que necesito, donde el hace un draft y le voy puliendo los datelles.
 
-3. Tambien le pido que genere los unit tests
+3. Un flujo tipico que realizo es para el debugging, cuando se trata de problemas que invluye varios archivos, los agrego al contexto y le pido al ai que me genera sugerencia de fixes sin aplicar cambios realmente, los reviso y si me parece bien, los aplico.
+
+4. Tambien le pido que genere los unit tests de los servicios y ayudarme a generar la documentacion
 
 # Uso de AI para front
 
 - Le pase los datos para que haga un analisis sobre que se puede analizar y que KPI puedo sacar para mostrar informacion que aporta a los usuarios
-- En mi flujo de programacion, le pido cosas faciles pero que toma mas tiempo a mano por ejemplo, definir los tipos para el datos, refactorizar a hooks la logica de selecion de fechas y la carga de datos
-- Tambien le pase los kpis que quiero analizar para que me facilite con la implementacion de estos
+- En mi flujo de programacion, le pido cosas faciles pero que toma mas tiempo a mano por ejemplo, definir los tipos para el datos, refactorizar a hooks ciertas logicas (por ejemplo, selecion de fechas y la carga de datos)
+- Un flujo tipico que hago en front es cuando cambio un componente que es utilizado en muchas partes, le pido que actualize el cambio a todos los archivos relacionados
+- Tambien le pase los KPIs que quiero analizar para que me facilite con la implementacion de estos calculos.

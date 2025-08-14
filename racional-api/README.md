@@ -13,6 +13,8 @@ Este proyecto es para una **API de Gestión de Inversiones** que permite a los u
 
 El diseño es **escalable**, **mantenible** y **consciente de la liquidación** — lo que significa que distingue entre la **fecha de creación de la orden** y la **fecha de ejecución** cuando los fondos o activos realmente cambian de manos.
 
+Cabe destacar que hice este backend pensando que es un **backend for frontend**, esto se ve reflejado en la respuesta que traen ciertos endpoints para optimizar el UX (Paginación, separación de responsabilidades para loading time, traer lo justo y necesario)
+
 ## ⚙ Principios de Diseño
 
 1. **Separación de Responsabilidades** — Las carteras manejan efectivo, los portafolios manejan activos.
@@ -79,6 +81,7 @@ Rastrea las tenencias actuales en un portafolio.
 | stock_id          | UUID          | FK → Stock.id      | Referencia de la acción                     |
 | shares            | DECIMAL(15,4) | NOT NULL           | Número de acciones en tenencia              |
 | investment_amount | DECIMAL(15,2) | NOT NULL           | Monto total invertido en tenencias actuales |
+| sell_amount       | DECIMAL(15,2) |                    | Monto total vendido en tenencias actuales   |
 | updated_at        | TIMESTAMP     | Auto-actualización | Marca de tiempo de última actualización     |
 
 ---
@@ -132,3 +135,77 @@ Representa órdenes de compra/venta de acciones.
 | created_at      | TIMESTAMP          | DEFAULT now                 | Marca de tiempo de creación del registro |
 
 ---
+
+# Endpoints
+
+## Autenticación
+
+| Método | Endpoint         | Descripción                                |
+| ------ | ---------------- | ------------------------------------------ |
+| `POST` | `/auth/login`    | Iniciar sesión con credenciales de usuario |
+| `POST` | `/auth/register` | Registrar un nuevo usuario                 |
+
+## Usuarios
+
+| Método | Endpoint         | Descripción                                          |
+| ------ | ---------------- | ---------------------------------------------------- |
+| `GET`  | `/users/profile` | Obtener perfil del usuario con cartera y portafolios |
+| `PUT`  | `/users/profile` | Actualizar información del perfil del usuario        |
+
+## Portafolios
+
+| Método | Endpoint          | Descripción                                                |
+| ------ | ----------------- | ---------------------------------------------------------- |
+| `POST` | `/portfolios`     | Crear un nuevo portafolio                                  |
+| `GET`  | `/portfolios`     | Obtener todos los portafolios del usuario                  |
+| `GET`  | `/portfolios/:id` | Obtener resumen del portafolio con tenencias y rendimiento |
+| `PUT`  | `/portfolios/:id` | Actualizar información del portafolio                      |
+
+## Acciones
+
+| Método | Endpoint  | Descripción                            |
+| ------ | --------- | -------------------------------------- |
+| `GET`  | `/stocks` | Obtener todas las acciones disponibles |
+
+## Transacciones
+
+| Método | Endpoint                    | Descripción                                            |
+| ------ | --------------------------- | ------------------------------------------------------ |
+| `POST` | `/transactions`             | Crear una transacción de depósito o retiro             |
+| `GET`  | `/transactions`             | Obtener historial de transacciones del usuario         |
+| `GET`  | `/transactions/:id`         | Obtener transacción específica por ID                  |
+| `PUT`  | `/transactions/:id/execute` | Actualizar fecha de ejecución de transacción pendiente |
+
+## Órdenes de Trading
+
+| Método | Endpoint         | Descripción                                               |
+| ------ | ---------------- | --------------------------------------------------------- |
+| `POST` | `/trades/orders` | Crear y ejecutar una orden de compra/venta inmediatamente |
+| `GET`  | `/trades/orders` | Obtener historial de órdenes de trading del usuario       |
+
+---
+
+## Autenticación
+
+La mayoría de los endpoints requieren autenticación JWT. Incluye el token en el header:
+
+```
+Authorization: Bearer <your-jwt-token>
+```
+
+## Parámetros de Consulta
+
+- **Paginación**: Los endpoints de listado soportan `page` y `limit`
+  - `?page=1&limit=10` (valores por defecto)
+
+## Referencias Externas
+
+- **Documentación Postman**: [API Documentation](https://documenter.getpostman.com/view/37929525/2sB3BGHV5m)
+- Algunos endpoints permiten `external_ref_id` para reconciliación con sistemas externos
+
+# Posibles mejoras para el futuro
+
+- Introducir historial de precios de las acciones
+- Introducir más campos que faciliten el análisis de datos sobre rendimiento de portafolio
+- Introducir selección de wallet al comprar
+- Implementar una lógica de conciliación mejor con servicios externos de payment managing
