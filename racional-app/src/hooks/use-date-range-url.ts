@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { DateRange } from "react-day-picker";
 import { useDatasetBounds } from "./use-dataset-bounds";
 
@@ -90,6 +90,13 @@ export function useDateRangeUrl() {
     },
     [router, searchParams],
   );
+
+  // set search params to bounds if no params are set
+  useEffect(() => {
+    if (!startDate && !endDate && bounds) {
+      router.push(`?start=${formatDateForUrl(bounds.minDate)}&end=${formatDateForUrl(bounds.maxDate)}`);
+    }
+  }, [startDate, endDate, bounds, router]);
 
   return {
     fromDate,

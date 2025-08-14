@@ -63,6 +63,8 @@ export function DayRangePicker() {
             onSelect={setStartDate}
             disabled={isStartDateDisabled}
             defaultMonth={fromDate}
+            startMonth={datasetBounds?.minDate}
+            endMonth={datasetBounds?.maxDate}
             autoFocus
           />
         </PopoverContent>
@@ -94,6 +96,8 @@ export function DayRangePicker() {
             onSelect={setEndDate}
             disabled={isEndDateDisabled}
             defaultMonth={toDate}
+            startMonth={datasetBounds?.minDate}
+            endMonth={datasetBounds?.maxDate}
             autoFocus
           />
         </PopoverContent>
