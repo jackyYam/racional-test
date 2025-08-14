@@ -103,7 +103,7 @@ Representa un activo del mercado.
 
 ### **6. Transaction**
 
-Representa movimientos de efectivo (depósitos/retiros).
+Representa movimientos de efectivo (depósitos/retiros). Importante: Solamente las transacciones con execution date not null son considerado para el conteo de balance en Wallet. Esto es para acercar un poco mas al mundo real. El external_ref_id actualmente no tiene ningun efecto pero sirve para hacer referencia a posible conexion con sistema externo de pago
 
 | Field           | Type                         | Constraints                 | Description                              |
 | --------------- | ---------------------------- | --------------------------- | ---------------------------------------- |
@@ -119,7 +119,7 @@ Representa movimientos de efectivo (depósitos/retiros).
 
 ### **7. TradeOrder**
 
-Representa órdenes de compra/venta de acciones.
+Representa órdenes de compra/venta de acciones. Para el efecto de esta app, el execution_date se considera realizado de immediato para evitar dms complejidad.
 
 | Field           | Type               | Constraints                 | Description                              |
 | --------------- | ------------------ | --------------------------- | ---------------------------------------- |
